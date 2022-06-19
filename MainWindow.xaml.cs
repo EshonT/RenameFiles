@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using Path = System.IO.Path;
 
 namespace RenameFiles
 {
@@ -26,59 +27,78 @@ namespace RenameFiles
             InitializeComponent();
         }
 
-
-        
+        private static List<string> logs = new List<string>();
 
         private void Btn_Find_Click(object sender, RoutedEventArgs e)
         {
-
         }
 
         private void Btn_Rename_Click(object sender, RoutedEventArgs e)
         {
+            String dir = this.Tbx_DirPath.Text;
+            Done(dir);
 
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < logs.Count; i++)
+            {
+                logs[i] = logs[i].TrimStart().TrimEnd();
+                sb.AppendLine(logs[i]);
+            }
+
+            Tbx_Message.Text=sb.ToString();
         }
 
         private static void Done(String dirPath)
         {
-            Directory directory = new Directory(dirPath);
-            //文件夹
-            File directoryFile = new File(directoryPath + "test");
-            if (directoryFile.isDirectory())
+            List<string> files = Directory.EnumerateFiles(dirPath).ToList();
+
+            for (int i = 0; i < files.Count; i++)
             {
-                File[] files = directoryFile.listFiles();
-                for (File file : files)
+                string file = files[i];
+                RenameByRule(i, file);
+            }
+
+        }
+
+        /// <summary>
+        /// 按最后修改时间重命名照片
+        /// </summary>
+        /// <param name="i"></param>
+        /// <param name="file"></param>
+        private static void RenameByRule(int i, string file)
+        {
+            if (File.Exists(file))
+            {
+                try
                 {
+                    FileInfo fileInfo = new(file);
+                    string? currentDir = fileInfo.DirectoryName;
 
-                    //获取时间
-                    long modifyTime = file.lastModified();
-                    System.out.println(modifyTime);
-                    String trueTime = formatModifyTime(modifyTime);
-
-                    //后缀
-                    String name = file.getName();
-                    String suffix = name.substring(name.lastIndexOf("."));
-
-                    //重命名
-                    File newName = new File(directoryFile.getAbsolutePath() + File.separator + trueTime + suffix);
-                    if (!file.renameTo(newName))
+                    if (currentDir is null)
                     {
-                        System.out.println(file.getName() + "修改失败  有相同时间的文件");
+                        return;
                     }
+
+                    DateTime lastWriteTime = File.GetLastWriteTime(file);
+                    string newName = $"IMG_{lastWriteTime:yyyyMMdd_HHmmss_}{i.ToString().PadLeft(3, '0')}{fileInfo.Extension}";
+                    string archiveDir = Path.Combine(currentDir, "Done");
+                    if (!Directory.Exists(archiveDir))
+                    {
+                        Directory.CreateDirectory(archiveDir);
+                    }
+
+                    string targetFilePath = Path.Combine(archiveDir, newName);
+
+                    fileInfo.MoveTo(targetFilePath);
+
+                }
+                catch (Exception e)
+                {
+                    string message = DateTime.Now.ToString("F")+"\t" + file +"\t"+ e.Message;
+                    logs.Add(message);
                 }
             }
         }
 
-
-        private static String FormatModifyTime(long modifyTime)
-        {
-            Calendar calendar = Calendar.getInstance();
-
-            calendar.setTimeInMillis(modifyTime);
-            String pattern = "yyyy-MM-dd HHmmssSSS";
-            SimpleDateFormat sdf = new SimpleDateFormat(pattern);
-
-            return sdf.format(calendar.getTime());
-        }
     }
 }
