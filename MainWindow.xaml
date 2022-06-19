@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:RenameFiles"
         mc:Ignorable="d"
-        Title="MainWindow" Height="200" Width="365">
+       Title="RenamePhoto" Height="200" Width="365">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="1*"/>

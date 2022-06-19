@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
+using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -18,7 +19,7 @@ using Path = System.IO.Path;
 namespace RenameFiles
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// MainWindow.xaml 的交互逻辑
     /// </summary>
     public partial class MainWindow : Window
     {
@@ -31,11 +32,22 @@ namespace RenameFiles
 
         private void Btn_Find_Click(object sender, RoutedEventArgs e)
         {
+            FolderBrowserDialog fbd = new FolderBrowserDialog();
+
+            fbd.Description = "选择文件夹";
+            fbd.ShowDialog();
+            Tbx_DirPath.Text = fbd.SelectedPath;
         }
 
         private void Btn_Rename_Click(object sender, RoutedEventArgs e)
         {
             String dir = this.Tbx_DirPath.Text;
+
+            if (String.IsNullOrEmpty(dir) || !Directory.Exists(dir))
+            {
+                Tbx_Message.Text = "文件夹异常";
+                return;
+            }
             Done(dir);
 
             StringBuilder sb = new StringBuilder();
@@ -45,7 +57,7 @@ namespace RenameFiles
                 sb.AppendLine(logs[i]);
             }
 
-            Tbx_Message.Text=sb.ToString();
+            Tbx_Message.Text = sb.ToString();
         }
 
         private static void Done(String dirPath)
@@ -71,13 +83,8 @@ namespace RenameFiles
             {
                 try
                 {
-                    FileInfo fileInfo = new(file);
-                    string? currentDir = fileInfo.DirectoryName;
-
-                    if (currentDir is null)
-                    {
-                        return;
-                    }
+                    FileInfo fileInfo = new FileInfo(file);
+                    string currentDir = fileInfo.DirectoryName;
 
                     DateTime lastWriteTime = File.GetLastWriteTime(file);
                     string newName = $"IMG_{lastWriteTime:yyyyMMdd_HHmmss_}{i.ToString().PadLeft(3, '0')}{fileInfo.Extension}";
@@ -94,11 +101,10 @@ namespace RenameFiles
                 }
                 catch (Exception e)
                 {
-                    string message = DateTime.Now.ToString("F")+"\t" + file +"\t"+ e.Message;
+                    string message = DateTime.Now.ToString("F") + "\t" + file + "\t" + e.Message;
                     logs.Add(message);
                 }
             }
         }
-
     }
 }
