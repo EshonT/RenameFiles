@@ -86,17 +86,18 @@ namespace RenameFiles
                     FileInfo fileInfo = new FileInfo(file);
                     string currentDir = fileInfo.DirectoryName;
 
-                    DateTime lastWriteTime = File.GetLastWriteTime(file);
-                    string newName = $"IMG_{lastWriteTime:yyyyMMdd_HHmmss_}{i.ToString().PadLeft(3, '0')}{fileInfo.Extension}";
-                    string archiveDir = Path.Combine(currentDir, "Done");
-                    if (!Directory.Exists(archiveDir))
+                    if (CheckPicSource(file))
                     {
-                        Directory.CreateDirectory(archiveDir);
+                        DealMicroMsgPic(fileInfo);
+                        return;
                     }
 
-                    string targetFilePath = Path.Combine(archiveDir, newName);
+                    DateTime lastWriteTime = File.GetLastWriteTime(file);
 
-                    fileInfo.MoveTo(targetFilePath);
+                    string newName = $"IMG_{lastWriteTime:yyyyMMdd_HHmmss_}{i.ToString().PadLeft(3, '0')}{fileInfo.Extension}";
+                    string archiveDir = Path.Combine(currentDir, "Done");
+
+                    RenameMoveFile(fileInfo, newName, archiveDir);
 
                 }
                 catch (Exception e)
@@ -105,6 +106,76 @@ namespace RenameFiles
                     logs.Add(message);
                 }
             }
+        }
+
+        private static void RenameMoveFile(FileInfo file, string newName, string newDirPath)
+        {
+            try
+            {
+                if (!Directory.Exists(newDirPath))
+                {
+                    Directory.CreateDirectory(newDirPath);
+                }
+
+                string targetFilePath = Path.Combine(newDirPath, newName);
+
+                file.MoveTo(targetFilePath);
+                
+            }
+            catch (Exception )
+            {
+                throw;
+            }
+        }
+
+        private static bool CheckPicSource(String fullName)
+        {
+            if (!String.IsNullOrEmpty(fullName))
+            {
+                FileInfo fileInfo = new FileInfo(fullName);
+                if (fileInfo.Exists)
+                {
+                    string fileName=fileInfo.Name;
+                    if (fileName.StartsWith("mmexport"))
+                    {
+                        logs.Add("微信保存图片 " + fullName);
+
+                        return true;
+
+                    }
+                }
+            }
+            return false;
+        }
+
+        private static void DealMicroMsgPic(FileInfo file)
+        {
+            string name = file.Name;
+            string ext = file.Extension;
+
+            name.Replace("mmexport", "IMG_");
+            String[] namePart = name.Split(new char[] { '_', '.' });
+            String timeString = namePart[1];
+            long timeStamp = Int64.Parse(timeString);
+            DateTime time = FromTimeStamp(timeStamp);
+
+            namePart[1] = time.ToString("yyyyMMdd_HHmmss");
+
+            string newName = String.Join("_", namePart);
+
+            string archiveDir = Path.Combine(file.DirectoryName, "Done");
+
+            RenameMoveFile(file, newName, archiveDir);
+
+        }
+
+
+        private static DateTime FromTimeStamp(long timestamp)
+        {
+            long begtine = timestamp * 10000;
+            DateTime dt_1970 = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+            long tine_tricks = dt_1970.Ticks + begtine;
+            return new DateTime(tine_tricks);
         }
     }
 }
